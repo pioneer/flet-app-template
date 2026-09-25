@@ -99,6 +99,7 @@ def test_mobile_debug_marker_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path: 
             "flet",
             "debug",
             "android",
+            "--yes",
             "-v",
             "--no-compile-app",
             "--device-id",
@@ -121,6 +122,47 @@ def test_release_removes_debug_marker(monkeypatch: pytest.MonkeyPatch, tmp_path:
     monkeypatch.setattr(tasks, "execute", MagicMock())
     tasks.build_target("web")
     assert not marker.exists()
+
+
+def test_builds_are_non_interactive(monkeypatch: pytest.MonkeyPatch) -> None:
+    execute = MagicMock()
+    monkeypatch.setattr(tasks, "stage_assets", lambda: None)
+    monkeypatch.setattr(tasks, "execute", execute)
+    tasks.build_web(Context(), base_url="/apps/demo/")
+    assert execute.call_args.args == ("flet", "build", "web", "--yes", "--base-url", "/apps/demo/")
+    assert execute.call_args.kwargs["env"]["APP_DEBUG"] == "0"
+
+
+def test_adb_resolution(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(tasks.shutil, "which", lambda name: "/opt/adb")
+    assert tasks.find_adb() == "/opt/adb"
+    monkeypatch.setattr(tasks.shutil, "which", lambda name: None)
+    monkeypatch.setattr(tasks.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(tasks.AndroidSDK, "android_home_dir", staticmethod(lambda: tmp_path))
+    assert tasks.find_adb() is None
+    (tmp_path / "platform-tools").mkdir()
+    (tmp_path / "platform-tools/adb").touch()
+    assert tasks.find_adb() == str(tmp_path / "platform-tools/adb")
+    monkeypatch.setattr(tasks.AndroidSDK, "android_home_dir", staticmethod(lambda: None))
+    assert tasks.find_adb() is None
+
+
+def test_logs_android_uses_sdk_adb(monkeypatch: pytest.MonkeyPatch) -> None:
+    execute = MagicMock()
+    monkeypatch.setattr(tasks, "find_adb", lambda: "/sdk/platform-tools/adb")
+    monkeypatch.setattr(tasks, "execute", execute)
+    tasks.logs_android(Context(), device="emulator-5554")
+    assert execute.call_args.args == (
+        "/sdk/platform-tools/adb",
+        "-s",
+        "emulator-5554",
+        "logcat",
+        "-s",
+        "flet.python",
+    )
+    monkeypatch.setattr(tasks, "find_adb", lambda: None)
+    with pytest.raises(Exit, match="adb is missing"):
+        tasks.logs_android(Context())
 
 
 def test_device_discovery(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

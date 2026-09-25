@@ -26,11 +26,11 @@ All project operations use `uv run inv TASK`; `uv run inv --list` lists tasks an
 | Task | Purpose / prerequisites |
 | --- | --- |
 | `setup` | Synchronize the locked development environment |
-| `run`, `debug` | Desktop hot reload; debug adds application DEBUG and Flet diagnostics |
+| `run`, `debug` | Desktop hot reload; debug adds application DEBUG and verbose Flet CLI |
 | `run-web`, `debug-web` | Live Python web server at http://127.0.0.1:8550; `--port=8551` to change |
 | `debug-android` | Official device debugging; `--device=ID`, Android SDK/device |
 | `debug-ios` | Official device debugging; `--device=ID`, macOS/Xcode/device or simulator |
-| `logs-android` | Stream Python logcat; Android platform-tools, optional `--device=ID` |
+| `logs-android` | Stream Python logcat; `adb` from PATH or Flet's Android SDK, optional `--device=ID` |
 | `doctor` | Python, uv, Flet, host, and optional tools diagnostics |
 | `test`, `lint`, `format`, `format-check`, `typecheck` | pytest, Ruff lint/format, Pyright |
 | `check` | Format-check, lint, typecheck, then test; stops on failure |
@@ -43,10 +43,11 @@ All project operations use `uv run inv TASK`; `uv run inv --list` lists tasks an
 | `build-android`, `build-android-aab` | APK/AAB on Linux, Windows, or macOS; Android/JDK tools |
 | `build-ios`, `build-ios-simulator` | macOS only; IPA needs signing, simulator is unsigned |
 | `build-windows` | Windows only; Visual Studio C++ desktop toolchain |
-| `build-linux` | Linux only; compiler, CMake, Ninja, GTK development libraries |
+| `build-linux` | Linux only; packages from `flet --version --json` (see development docs) |
 | `build-macos` | macOS only; Xcode and CocoaPods |
 
-Flet downloads its supported Flutter SDK when necessary. Native builds also need
+Flet downloads its supported Flutter SDK, and Android JDK/SDK for Android tasks,
+without prompting. Native builds also need
 platform SDKs and may download substantial artifacts. Build artifacts are not
 automatically signed for public distribution. Full host and signing requirements
 are in [development](docs/development.md).

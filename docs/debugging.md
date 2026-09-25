@@ -18,7 +18,9 @@ Flutter and the platform SDK/device; iOS requires macOS. Enable Android develope
 mode/USB debugging and authorize the host. Start an emulator/simulator or connect
 a physical device. Use `--list-devices` on a debug task to discover targets. The
 task supplies a discovery-only ID because Flet 1.0.1 checks for an ID before
-listing; listing does not launch that ID.
+listing; listing does not launch that ID. `logs-android` uses `adb` from `PATH`,
+then `ANDROID_HOME`/`ANDROID_SDK_ROOT` or the SDK directory Flet installs, so it
+works after any Android build or debug session has provisioned the SDK.
 
 Desktop/web debug sets `APP_DEBUG=1`, unbuffered output, and Flet CLI `-v`.
 Mobile debug retains Python app source for traceback lines. Mobile Python does
@@ -60,9 +62,10 @@ cannot report exceptions your code swallowed or never observed.
 Packaged macOS redirects Python output even when launched from a terminal.
 Unsandboxed macOS commonly uses `~/Library/Caches/<bundle-id>/console.log`;
 sandboxed paths differ. On iOS inspect the app container's Library/Caches.
-Android's private file needs privileged access; prefer non-root logcat. On Windows
-and Linux find the console file using Flet's runtime path rather than assuming a
-working directory. Flet's async `StoragePaths.get_console_log_filename()` is an
+Android's private file needs privileged access; prefer non-root logcat. Packaged
+Linux apps write `~/.cache/<bundle-id>/console.log` (verified with Flet 1.0.1) and
+also echo it to the launching terminal. On Windows find the console file using
+Flet's runtime path rather than assuming a working directory. Flet's async `StoragePaths.get_console_log_filename()` is an
 optional future in-app diagnostic mechanism, not a dependency of this template.
 Verify its API through MCP before adding it.
 

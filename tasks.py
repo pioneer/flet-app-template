@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from flet_cli.utils.android_sdk import AndroidSDK
 from invoke.context import Context
 from invoke.exceptions import Exit
 from invoke.tasks import task
@@ -15,9 +16,12 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent
 HOSTS = {"linux": "Linux", "windows": "Windows", "macos": "Darwin"}
+# Flet otherwise prompts before installing Flutter/Android SDKs, which fails without a TTY.
+UNATTENDED = "--yes"
 
 
 def execute(*args: str, env: dict[str, str] | None = None) -> None:
+    sys.stdout.flush()
     try:
         subprocess.run(args, cwd=ROOT, env=os.environ | (env or {}), check=True)
     except FileNotFoundError as exc:
@@ -62,11 +66,21 @@ def validate_icon() -> None:
         image.verify()
 
 
+def find_adb() -> str | None:
+    if found := shutil.which("adb"):
+        return found
+    sdk = AndroidSDK.android_home_dir()
+    if sdk is None:
+        return None
+    adb = sdk / "platform-tools" / ("adb.exe" if platform.system() == "Windows" else "adb")
+    return str(adb) if adb.is_file() else None
+
+
 def build_target(target: str, *extra: str) -> None:
     require_host(target)
     (ROOT / "src/app/.debug-mode").unlink(missing_ok=True)
     stage_assets()
-    execute("flet", "build", target, *extra, env=debug_env(False))
+    execute("flet", "build", target, UNATTENDED, *extra, env=debug_env(False))
 
 
 def run_app(*, web: bool = False, debug: bool = False, port: int = 8550) -> None:
@@ -122,7 +136,7 @@ def debug_mobile(target: str, device: str, list_devices: bool) -> None:
     if not device and not list_devices:
         raise Exit("Specify --device=DEVICE_ID or use --list-devices first.", code=1)
     stage_assets()
-    args = ["flet", "debug", target, "-v", "--no-compile-app"]
+    args = ["flet", "debug", target, UNATTENDED, "-v", "--no-compile-app"]
     args += ["--device-id", device or "discover"]
     if list_devices:
         args += ["--show-devices"]
@@ -148,10 +162,15 @@ def debug_ios(context: Context, device: str = "", list_devices: bool = False) ->
 
 @task
 def logs_android(context: Context, device: str = "") -> None:
-    """Stream only Flet Python logcat messages; requires Android platform-tools."""
-    if not shutil.which("adb"):
-        raise Exit("adb is missing. Install Android SDK platform-tools and add it to PATH.", code=1)
-    args = ["adb"] + (["-s", device] if device else [])
+    """Stream only Flet Python logcat messages; uses PATH or Flet's Android SDK."""
+    adb = find_adb()
+    if adb is None:
+        raise Exit(
+            "adb is missing. Run uv run inv build-android once to let Flet install the "
+            "Android SDK, or set ANDROID_HOME to an SDK with platform-tools.",
+            code=1,
+        )
+    args = [adb] + (["-s", device] if device else [])
     execute(*args, "logcat", "-s", "flet.python")
 
 
@@ -160,8 +179,8 @@ def doctor(context: Context) -> None:
     """Report host/tool availability and official Flet diagnostics."""
     print(f"Python: {sys.version.split()[0]} ({sys.executable})")
     print(f"Host: {platform.system()} {platform.machine()}")
-    for command in ("aws", "adb"):
-        print(f"{command}: {shutil.which(command) or 'not installed (optional)'}")
+    print(f"aws: {shutil.which('aws') or 'not installed (optional)'}")
+    print(f"adb: {find_adb() or 'not installed (optional)'}")
     execute("uv", "--version")
     execute("flet", "--version")
     execute("flet", "doctor")

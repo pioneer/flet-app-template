@@ -10,13 +10,18 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python: ["3.13", "3.14"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.13"]
+        include:
+          - os: ubuntu-latest
+            python: "3.14"
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           version: "0.12.10"
           python-version: ${{ matrix.python }}
@@ -57,16 +62,22 @@ jobs:
             os: macos-latest
             task: build-ios-simulator
     runs-on: ${{ matrix.os }}
+    env:
+      FLET_CLI_NO_RICH_OUTPUT: "1"
+      PYTHONUTF8: "1"
     steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           version: "0.12.10"
           enable-cache: true
       - run: uv sync --locked
       - name: Linux build prerequisites
         if: matrix.target == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+        run: |
+          mapfile -t packages < <(uv run flet --version --json | jq -r '.linux_dependencies[]')
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends "${packages[@]}"
       - name: Build
         run: uv run inv ${{ matrix.task }}
       - uses: actions/upload-artifact@v7

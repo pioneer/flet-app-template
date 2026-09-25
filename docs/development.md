@@ -2,7 +2,8 @@
 
 Install uv, then run the three commands at the start of the
 [README](../README.md). `.python-version` selects Python 3.13 for development;
-the application supports Python 3.13 and newer. CI checks 3.13 and 3.14.
+the application supports Python 3.13 and newer. CI checks 3.13 on every desktop
+OS and 3.14 on Linux.
 
 `uv run inv setup` uses `uv sync --locked`. Add runtime dependencies with
 `uv add PACKAGE` and development tools with `uv add --dev PACKAGE`; retain both
@@ -31,12 +32,15 @@ Platform-specific tasks reject incompatible hosts before starting a build.
 | `build-ios-simulator` | macOS; Xcode and CocoaPods, no signing required | `build/ios-simulator` |
 | `build-macos` | macOS; Xcode and CocoaPods | `build/macos` |
 | `build-windows` | Windows; Visual Studio Desktop development with C++ | `build/windows` |
-| `build-linux` | Linux; Clang, CMake, Ninja, pkg-config, GTK development packages | `build/linux` |
+| `build-linux` | Linux; Flet-reported toolchain, GTK, and media packages | `build/linux` |
 
-Flet installs its required Flutter version when unavailable. It can install JDK
-and Android SDK components too; allow disk space, downloads, and SDK licensing.
-For Debian/Ubuntu Linux builds, the CI packages are `clang cmake ninja-build
-pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev`. Plugins may add native
+Flet installs its required Flutter version when unavailable, and JDK/Android SDK
+components for Android targets. Build and mobile-debug tasks pass `--yes`, so
+those installs (including SDK license acceptance) proceed without a prompt; allow
+disk space and downloads. `uv run flet --version --json` lists the Debian/Ubuntu
+packages Flet requires for Linux builds (`linux_dependencies`, including `lld`);
+CI installs exactly that list. Other distributions need the equivalent packages.
+Plugins may add native
 requirements. A WSL Linux environment builds Linux, not Windows; GUI use needs
 WSLg or an appropriate display. On Apple Silicon some tools require Rosetta.
 Run `uv run inv doctor` to inspect the actual host.
@@ -71,7 +75,8 @@ macOS local builds are ad-hoc signed; public distribution normally needs Develop
 ID signing and notarization. Configure platform metadata in pyproject.toml, but
 keep passwords, key files, and credentials in external stores or CI secrets.
 
-Push/PR CI runs format-check, lint, Pyright, and pytest on Python 3.13/3.14. Manual
+Push/PR CI runs format-check, lint, Pyright, and pytest on Linux, Windows, and
+macOS with Python 3.13, plus Linux with Python 3.14. Manual
 workflow dispatch adds web, APK/AAB, Linux, Windows, macOS, and unsigned iOS
 simulator builds on the proper runners. It does not publish or install signing
 secrets. A green simulator job does not certify a physical device or store release.
