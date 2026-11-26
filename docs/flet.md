@@ -1,7 +1,8 @@
 # Flet and MCP
 
-This template pins Flet 1.0.1 and uses imperative controls with `ft.run(main)`.
-Do not copy deprecated APIs or introduce `@ft.component`.
+This template pins Flet 1.1.3 and uses imperative controls with `ft.run(main)`.
+Do not copy deprecated APIs or introduce `@ft.component`. The template uses
+Flet's default theme, which has neutral surfaces starting in 1.1.
 
 [.vscode/mcp.json](../.vscode/mcp.json) starts the installed server with
 `uv run flet mcp` from the workspace. Run `uv sync`, trust the workspace/server in

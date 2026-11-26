@@ -9,7 +9,7 @@ OS and 3.14 on Linux.
 `uv add PACKAGE` and development tools with `uv add --dev PACKAGE`; retain both
 pyproject.toml and uv.lock. Review upgrades deliberately, verify current Flet MCP
 contracts, then run `uv run inv check` and a real build. Flet runtime, CLI extras,
-and MCP are pinned together to stable 1.0.1 in this template.
+and MCP are pinned together to stable 1.1.3 in this template.
 
 Use `uv run inv run` for desktop or `uv run inv run-web` for browser development.
 Both hot-reload the source tree. Stop with Ctrl+C. Web binds to localhost, not the
@@ -34,6 +34,10 @@ Platform-specific tasks reject incompatible hosts before starting a build.
 | `build-windows` | Windows; Visual Studio Desktop development with C++ | `build/windows` |
 | `build-linux` | Linux; Flet-reported toolchain, GTK, and media packages | `build/linux` |
 
+Packaged Apple apps now require macOS 12+ or iOS 15+, respectively. Flet uses
+`[tool.flet].product` as the default macOS `.app` name; set
+`[tool.flet.macos].artifact` to override it.
+
 Flet installs its required Flutter version when unavailable, and JDK/Android SDK
 components for Android targets. Build and mobile-debug tasks pass `--yes`, so
 those installs (including SDK license acceptance) proceed without a prompt; allow
@@ -45,10 +49,10 @@ requirements. A WSL Linux environment builds Linux, not Windows; GUI use needs
 WSLg or an appropriate display. On Apple Silicon some tools require Rosetta.
 Run `uv run inv doctor` to inspect the actual host.
 
-Flet selects the highest bundled Python satisfying `requires-python` (currently
-3.14.7 for this range), not necessarily the local 3.13 interpreter. Web uses the
-corresponding Pyodide runtime. Check Flet's build output when upgrading; add an
-explicit supported build Python version only if a dependency requires it. Native
+Flet selects the highest bundled stable Python satisfying `requires-python`
+(3.14.10 in Flet 1.1.3 for this range), not necessarily the local 3.13 interpreter.
+Web uses the corresponding Pyodide runtime. Check Flet's build output when
+upgrading; add an explicit build Python version only if a dependency requires it. Native
 extensions need target-specific Android/iOS wheels or Pyodide support. Desktop
 installation success alone is not proof of mobile/browser compatibility.
 
